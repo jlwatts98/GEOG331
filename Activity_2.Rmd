@@ -1,0 +1,398 @@
+---
+title: "Activity_2"
+author: "Jacob Watts"
+date: "9/17/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Activity 2
+
+# Question 1
+
+```{r, include=T}
+datW <- read.csv("C:\\Users\\Chloe\\Documents\\R\\GitHub\\GEOG331\\noaa_weather\\2011124.csv",
+                 stringsAsFactors = T)
+# number of columns and rows in the dataset
+datW.col = ncol(datW)
+datW.row = nrow(datW)
+# getting more information about the dataset, factors set by strongsAsFactors().
+str(datW)
+# change the data from a factor to a proper date format
+datW$dateF <- as.Date(datW$DATE, "%Y-%m-%d")
+# years as a separate column
+datW$year <- as.numeric(format(datW$dateF,"%Y"))
+```
+
+There are `r datW.col` columns in this dataset and `r datW.row` rows in this dataset.
+
+# Question 2
+
+```{r, include = T}
+# create vectors of type factor, integer, numeric, and character
+
+numeric <- as.numeric(c(13.3,20.5,30.4,65.8,100.3))
+integer <- as.integer(c(13.3,20.5,30.4,65.8,100.3))
+character <- as.character(c("yes", "no", "yes", "no", "yes"))
+facter <- as.factor(character)
+```
+
+Data types are an essential part of coding in R. Certain functions can only handle certain data types and certain data types are useful for various types of analyses. There are four basic types of data: character, numeric, integer, and factor. Numeric data is one of the most common and includes any data that is purely a number and has decimal points or could have decimal points. It is used for almost all numerical analyses such as ANOVA, t-test, etc. Numeric data can also be stored as an integer, where all data is rounded to the nearest whole number and there are no decimal points. This is only useful if one wants to save storage space. The other common use of integer data is converting TRUE and FALSE to 1 and 0 respectively for analyses such as logistic regression. Character and factor data types usually don’t involve numbers and are used to label things or set things into specific groups. Characters are just a string of characters and are mostly useful for labels, while factors can be used to show groups like “Agree, Disagree, Indifferent.”
+
+# Question 3
+
+```{r, include = T}
+##### Descriptive and Summary Statistics #####
+# find all unique sites
+unique(datW$NAME)
+
+# find the mean max temperature for Aberdeen
+mean(datW$TMAX[datW$NAME == "ABERDEEN, WA US"])
+
+# receieve an NA result because there are missing data points, remove them
+mean(datW$TMAX[datW$NAME == "ABERDEEN, WA US"],na.rm= "T")
+
+# calculate the average daily temperature
+# find the mean of the min and max
+#calculate the average daily temperature
+#This temperature will be halfway between the minimum and maximum temperature
+datW$TAVE <- datW$TMIN + ((datW$TMAX-datW$TMIN)/2)
+
+#get the mean across all sites
+#the by function is a list of one or more variables to index over.
+#FUN indicates the function we want to use
+#if you want to specify any function specific arguments use a comma and add them after the function
+#here we want to use the na.rm arguments specific to 
+averageTemp <- aggregate(datW$TAVE, by=list(datW$NAME), FUN="mean",na.rm=TRUE)
+averageTemp
+
+#change the automatic output of column names to be more meaningful
+#note that MAAT is a common abbreviation for Mean Annual Air Temperature
+colnames(averageTemp) <- c("NAME","MAAT")
+averageTemp
+
+# names are long, let's change them to a factor number to reference
+#convert level to number for factor data type
+#will have to reference the level output or look at the row of data to see character
+datW$siteN <- as.numeric(as.factor(datW$NAME))
+
+# making a histogram
+
+#make a histogram for the first site in our levels
+#main= is the title name argument.
+#Here you want to paste the actual name of the factor not the numeric index
+#since that will be more meaningful. 
+hist(datW$TAVE[datW$siteN == 1],
+     freq=FALSE, 
+     main = paste(levels(datW$NAME)[1]),
+     xlab = "Average daily temperature (degrees C)", 
+     ylab="Relative frequency",
+     col="grey50",
+     border="white")
+### Question 3
+
+#help(hist)
+
+```
+
+The first argument in hist is telling the histogram function which data to use to make the histogram. The freq function is a logical function where the user can define if the histogram will be total numbers or a probability density. FALSE means that it displays a probability density. Main is the title function, specifying the title of the graph, xlab and ylab define the y axis and x axis labels, col defines the color of the bars, and border defines the color of the border.
+
+# Question 4
+
+```{r, include = T}
+#make a histogram for the first site in our levels, Aberdeen
+
+# set the par first to 2,2 so the graphs show up in 2 rows and 2 columns
+par(mfrow=c(2,2))
+print(unique(datW$NAME)[1])
+hist(datW$TAVE[datW$siteN == 1],
+     freq=FALSE, 
+     main = paste(unique(datW$NAME)[1]),
+     xlab = "Average daily temperature (degrees C)", 
+     ylab="Relative frequency",
+     col="grey50",
+     border="white")
+#add mean line with red (tomato3) color
+#and thickness of 3
+abline(v = mean(datW$TAVE[datW$siteN == 1],na.rm=TRUE), 
+       col = "tomato3",
+       lwd = 3)
+#add standard deviation line below the mean with red (tomato3) color
+#and thickness of 3
+abline(v = mean(datW$TAVE[datW$siteN == 1],na.rm=TRUE) - sd(datW$TAVE[datW$siteN == 1],na.rm=TRUE), 
+       col = "tomato3", 
+       lty = 3,
+       lwd = 3)
+#add standard deviation line above the mean with red (tomato3) color
+#and thickness of 3
+abline(v = mean(datW$TAVE[datW$siteN == 1],na.rm=TRUE) + sd(datW$TAVE[datW$siteN == 1],na.rm=TRUE), 
+       col = "tomato3", 
+       lty = 3,
+       lwd = 3)
+
+# SITE 2
+
+hist(datW$TAVE[datW$siteN == 2],
+     freq=FALSE, 
+     main = paste(unique(datW$NAME)[2]),
+     xlab = "Average daily temperature (degrees C)", 
+     ylab="Relative frequency",
+     col="grey50",
+     border="white")
+#add mean line with red (tomato3) color
+#and thickness of 3
+abline(v = mean(datW$TAVE[datW$siteN == 2],na.rm=TRUE), 
+       col = "tomato3",
+       lwd = 3)
+#add standard deviation line below the mean with red (tomato3) color
+#and thickness of 3
+abline(v = mean(datW$TAVE[datW$siteN == 2],na.rm=TRUE) - sd(datW$TAVE[datW$siteN == 2],na.rm=TRUE), 
+       col = "tomato3", 
+       lty = 3,
+       lwd = 3)
+#add standard deviation line above the mean with red (tomato3) color
+#and thickness of 3
+abline(v = mean(datW$TAVE[datW$siteN == 2],na.rm=TRUE) + sd(datW$TAVE[datW$siteN == 2],na.rm=TRUE), 
+       col = "tomato3", 
+       lty = 3,
+       lwd = 3)
+
+# SITE 3
+
+hist(datW$TAVE[datW$siteN == 3],
+     freq=FALSE, 
+     main = paste(unique(datW$NAME)[3]),
+     xlab = "Average daily temperature (degrees C)", 
+     ylab="Relative frequency",
+     col="grey50",
+     border="white")
+#add mean line with red (tomato3) color
+#and thickness of 3
+abline(v = mean(datW$TAVE[datW$siteN == 3],na.rm=TRUE), 
+       col = "tomato3",
+       lwd = 3)
+#add standard deviation line below the mean with red (tomato3) color
+#and thickness of 3
+abline(v = mean(datW$TAVE[datW$siteN == 3],na.rm=TRUE) - sd(datW$TAVE[datW$siteN == 3],na.rm=TRUE), 
+       col = "tomato3", 
+       lty = 3,
+       lwd = 3)
+#add standard deviation line above the mean with red (tomato3) color
+#and thickness of 3
+abline(v = mean(datW$TAVE[datW$siteN == 3],na.rm=TRUE) + sd(datW$TAVE[datW$siteN == 3],na.rm=TRUE), 
+       col = "tomato3", 
+       lty = 3,
+       lwd = 3)
+
+# SITE 4
+
+hist(datW$TAVE[datW$siteN == 4],
+     freq=FALSE, 
+     main = paste(unique(datW$NAME)[4]),
+     xlab = "Average daily temperature (degrees C)", 
+     ylab="Relative frequency",
+     col="grey50",
+     border="white")
+#add mean line with red (tomato3) color
+#and thickness of 3
+abline(v = mean(datW$TAVE[datW$siteN == 4],na.rm=TRUE), 
+       col = "tomato3",
+       lwd = 3)
+#add standard deviation line below the mean with red (tomato3) color
+#and thickness of 3
+abline(v = mean(datW$TAVE[datW$siteN == 4],na.rm=TRUE) - sd(datW$TAVE[datW$siteN == 4],na.rm=TRUE), 
+       col = "tomato3", 
+       lty = 3,
+       lwd = 3)
+#add standard deviation line above the mean with red (tomato3) color
+#and thickness of 3
+abline(v = mean(datW$TAVE[datW$siteN == 4],na.rm=TRUE) + sd(datW$TAVE[datW$siteN == 4],na.rm=TRUE), 
+       col = "tomato3", 
+       lty = 3,
+       lwd = 3)
+```
+
+# Question 5
+
+
+
+``` {r, include =T}
+
+# normal distribution
+par(mfrow=c(1,1))
+#make a histogram for the first site in our levels
+#main= is the title name argument.
+#Here you want to paste the actual name of the factor not the numeric index
+#since that will be more meaningful. 
+#note I've named the histogram so I can reference it later
+h1 <- hist(datW$TAVE[datW$siteN == 1],
+           freq=FALSE, 
+           main = paste(unique(datW$NAME)[1]),
+           xlab = "Average daily temperature (degrees C)", 
+           ylab="Relative frequency",
+           col="grey50",
+           border="white")
+#the seq function generates a sequence of numbers that we can use to plot the normal across the range of temperature values
+x.plot <- seq(-10,30, length.out = 100)
+#the dnorm function will produce the probability density based on a mean and standard deviation.
+
+y.plot <-  dnorm(seq(-10,30, length.out = 100),
+                 mean(datW$TAVE[datW$siteN == 1],na.rm=TRUE),
+                 sd(datW$TAVE[datW$siteN == 1],na.rm=TRUE))
+#create a density that is scaled to fit in the plot  since the density has a different range from the data density.
+#!!! this is helpful for putting multiple things on the same plot
+#!!! It might seem confusing at first. It means the maximum value of the plot is always the same between the two datasets on the plot. Here both plots share zero as a minimum.
+y.scaled <- (max(h1$density)/max(y.plot)) * y.plot
+
+#points function adds points or lines to a graph  
+#the first two arguements are the x coordinates and the y coordinates.
+
+points(x.plot,
+       y.scaled, 
+       type = "l", 
+       col = "royalblue3",
+       lwd = 4, 
+       lty = 2)
+
+```
+
+
+The daily average temperature is not normally distributed at all sites. Site 1 and 2 seem to conform to a normal distribution, but the other sites such as 3 and 4 do not. Site 4 seems to have two different peaks in its distribution while site 3 seems to have a wide range of possible mean daily temperatures.
+
+# Question 6
+
+```{r, include =T}
+
+#### calculating probabilities based on normal distributions
+
+pnorm(0,
+      mean(datW$TAVE[datW$siteN == 1],na.rm=TRUE),
+      sd(datW$TAVE[datW$siteN == 1],na.rm=TRUE))
+
+pnorm(5,
+      mean(datW$TAVE[datW$siteN == 1],na.rm=TRUE),
+      sd(datW$TAVE[datW$siteN == 1],na.rm=TRUE))
+
+# find the probability of a temperature between 0-5
+pnorm(5,
+      mean(datW$TAVE[datW$siteN == 1],na.rm=TRUE),
+      sd(datW$TAVE[datW$siteN == 1],na.rm=TRUE)) - pnorm(0,
+      mean(datW$TAVE[datW$siteN == 1],na.rm=TRUE),
+      sd(datW$TAVE[datW$siteN == 1],na.rm=TRUE))
+
+## all temperatures above 20
+# note that pnorm(20) gives below 20, so subtract from 1 to get true probability
+1- pnorm(20,
+      mean(datW$TAVE[datW$siteN == 1],na.rm=TRUE),
+      sd(datW$TAVE[datW$siteN == 1],na.rm=TRUE))
+
+# qnorm gives the value at which a certain probability is met
+
+qnorm(0.95,
+      mean(datW$TAVE[datW$siteN == 1],na.rm=TRUE),
+      sd(datW$TAVE[datW$siteN == 1],na.rm=TRUE))
+
+
+##### Question 6 #####
+1- pnorm(qnorm(0.95,
+               mean(datW$TAVE[datW$siteN == 1],na.rm=TRUE),
+               sd(datW$TAVE[datW$siteN == 1],na.rm=TRUE)),
+         mean(datW$TAVE[datW$siteN == 1],na.rm=TRUE) +4,
+         sd(datW$TAVE[datW$siteN == 1],na.rm=TRUE))
+
+```
+
+If climate change were to increase the temperature by 4 degrees in Aberdeen, then abnormally high temperatures would have a 20.3% chance of occurring.
+
+# Question 7
+
+```{r, include =T}
+
+##### Question 7 #####
+
+par(mfrow=c(1,1))
+print(unique(datW$NAME)[1])
+hist(datW$PRCP[datW$siteN == 1],
+     freq=FALSE, 
+     main = paste(unique(datW$NAME)[1]),
+     xlab = "Average daily Rainfall (mm)", 
+     ylab="Relative frequency",
+     col="grey50",
+     border="white")
+#add mean line with red (tomato3) color
+#and thickness of 3
+abline(v = mean(datW$PRCP[datW$siteN == 1],na.rm=TRUE), 
+       col = "tomato3",
+       lwd = 3)
+#add standard deviation line below the mean with red (tomato3) color
+#and thickness of 3
+abline(v = mean(datW$PRCP[datW$siteN == 1],na.rm=TRUE) - sd(datW$PRCP[datW$siteN == 1],na.rm=TRUE), 
+       col = "tomato3", 
+       lty = 3,
+       lwd = 3)
+#add standard deviation line above the mean with red (tomato3) color
+#and thickness of 3
+abline(v = mean(datW$PRCP[datW$siteN == 1],na.rm=TRUE) + sd(datW$PRCP[datW$siteN == 1],na.rm=TRUE), 
+       col = "tomato3", 
+       lty = 3,
+       lwd = 3)
+
+```
+
+The rainfall distribution for Aberdeen fits into an exponential distribution. This is because there are likely many days where Aberdeen experiences no rainfall at all. So the data is very 0 heavy.
+
+# Questions 8-10
+
+```{r, include =T}
+
+# sum function to get total precipitation by site by year
+
+library(dplyr)
+datW.nona <- na.omit(datW)
+precip <- datW.nona %>% group_by(siteN, year) %>% summarise(precip_sum=sum(PRCP))
+precip
+paste(unique(datW$NAME)[2])
+hist(precip$precip_sum[precip$siteN == 2],
+     freq=FALSE, breaks=15,
+     main = "LIVERMORE, CA US",
+     xlab = "Yearly Rainfall (mm)", 
+     ylab="Relative frequency",
+     col="grey50",
+     border="white")
+
+#add mean line with red (tomato2) color
+#and thickness of 2
+abline(v = mean(precip$precip_sum[precip$siteN == 2],na.rm=TRUE), 
+       col = "tomato2",
+       lwd = 2)
+#add standard deviation line below the mean with red (tomato2) color
+#and thickness of 2
+abline(v = mean(precip$precip_sum[precip$siteN == 2],na.rm=TRUE) - sd(precip$precip_sum[precip$siteN == 2],na.rm=TRUE), 
+       col = "tomato2", 
+       lty = 2,
+       lwd = 2)
+#add standard deviation line above the mean with red (tomato2) color
+#and thickness of 2
+abline(v = mean(precip$precip_sum[precip$siteN == 2],na.rm=TRUE) + sd(precip$precip_sum[precip$siteN == 2],na.rm=TRUE), 
+       col = "tomato2", 
+       lty = 2,
+       lwd = 2)
+
+##### Question 9 #####
+
+meanprecip <- aggregate(precip$precip_sum, by=list(precip$siteN), FUN="mean",na.rm=TRUE)
+meanprecip
+averageTemp
+
+```
+
+8.	The total precipitation per year at Livermore, CA is normally distributed around a mean of around 350 mm a year. The standard deviation of the distribution is around 100 mm.
+9.	Mormon flats is the hottest and drieset site in the dataset with an average annual precipitation of only 288 mm and an average temperature of 22 degrees C. Aberdeen, WA is the wettest site with 2100 mm of rainfall and Nandan experiment station is the coldest with an average annual air temperature of 5.6 degrees C. Morrisville is intermediately wet, receiving 933 mm of rainfall a year and also quite cold with an average MAAT of 6.6 degrees C.
+10. 
+
+
+```{r, include =T}
+```
