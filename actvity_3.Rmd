@@ -2,7 +2,9 @@
 title: "Activity_3_GEOG_331"
 author: "Jacob Watts"
 date: "9/23/2020"
-output: html_document
+output:
+  word_document: default
+  html_document: default
 ---
 
 ```{r setup, include=FALSE}
@@ -30,11 +32,8 @@ What unreliable measurements do they prevent? What are cases where data could be
 #read in the data file
 #skip the first 3 rows since there is additional column info
 #specify the the NA is designated differently
-getwd()
-setwd("~/bewkes/bewkes/")
 datW <- read.csv("bewkes_weather.csv",
                 na.strings=c("#N/A"), skip=3, header=FALSE)
-help(read.csv)
 #preview data
 print(datW[1,])
 
