@@ -334,3 +334,7 @@ ggplot(data= datD1617, aes(season, discharge, by = Year, color = Year)) +
 
 Across both year, spring has a higher discharge on average because of snow melt from the winter, and summer has the lowest discharge across both years because of evaporation and transpiration. Fall and winter and intermediate. There are no obvious trends in the data between the years except that some of the outliers are much higher in one year versus the other. For example, in 2017, the discharge reached much higher outlier values than it did in the spring. A lot of seasons seem to have a bimodel distribution of discharge values, the lower of which is likely associated with base flow and the higher associated with rainfall events.
 
+# Question 10
+
+https://github.com/jlwatts98/GEOG331/blob/master/Activity_5.Rmd
+
