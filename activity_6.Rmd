@@ -1,0 +1,383 @@
+---
+title: "Activity 6"
+author: "Jacob Watts"
+date: "10/19/2020"
+output:
+  word_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_knit$set(root.dir = "~/R/GitHub/GEOG331/activity6_data/data/GNPglaciers")
+# load the packages
+library(raster)
+library(sp)
+library(rgdal)
+library(rgeos)
+library(plyr)
+```
+
+## Activity 6
+
+# Question 1
+
+```{r, include = T}
+#install.packages(c("raster","sp","rgdal","rgeos","plyr"))
+
+##### reading in Vector Data #####
+g1966 <- readOGR("GNPglaciers_1966.shp", stringsAsFactors = T)
+g1998 <- readOGR("GNPglaciers_1998.shp", stringsAsFactors = T)
+g2005 <- readOGR("GNPglaciers_2005.shp", stringsAsFactors = T)
+g2015 <- readOGR("GNPglaciers_2015.shp", stringsAsFactors = T)
+
+# look at the data
+head(g2015@data)
+#polygons stores the coordinates for drawing the polygons
+#g2015@polygons[[1]]
+# find the projection
+g1966@proj4string
+# spatialreference.org - all the 4 digit codes
+```
+
+The UTM or Universal Transverse Mercator projection is used mostly on the state level or local maps, because at that scale it has very little distortions of angle (shape) or area. Outside the zone, however, the distortion gets really large. This is why the UTM is used for local maps of states of lower spatial scale. The datum, NAD83 is a commonly used datum for north america because it is most accurate around north america. The project has units in meters. Zone 12 encapsulates most of montana including GNP.
+
+# Question 2
+
+```{r, include = T}
+# plot the data with different colors for each glacier
+spplot(g1966, "GLACNAME")
+#check glacier names
+g1966@data$GLACNAME
+g2015@data$GLACNAME
+#fix glacier name so that it is consistent with the entire time period
+g2015@data$GLACNAME <- ifelse(g2015@data$GLACNAME == "North Swiftcurrent Glacier",
+                              "N. Swiftcurrent Glacier",
+                                          ifelse(   g2015@data$GLACNAME ==  "Miche Wabun", 
+                                               "Miche Wabun Glacier",
+                                                as.character(g2015@data$GLACNAME)))
+
+#read in rgb imagery from landsat
+redL <- raster("l08_red.tif")
+greenL <- raster("l08_green.tif")
+blueL <- raster("l08_blue.tif")
+
+# check coordinate system
+redL@crs
+greenL@crs
+blueL@crs
+# same as vector data above
+#make a brick that stacks all layers - an object with the same extent and resolution
+rgbL <- brick(redL, greenL, blueL)
+
+
+```
+
+```{r, include = T}
+
+#plot with color
+#show axes for reference
+#add contrast to the imagery to see it better
+par(mai=c(1,1,1,1))
+plotRGB(rgbL, stretch="lin", axes=TRUE)
+#add polygons to plot
+plot(g1966, col="tan3", border=NA, add=TRUE)
+plot(g1998, col="royalblue3", add=TRUE, border=NA)
+plot(g2005, col="darkgoldenrod4", add=TRUE, border=NA)
+plot(g2015, col="tomato3", add=TRUE, border=NA)
+
+# zoom in
+plotRGB(rgbL, ext=c(289995,310000,5371253,5400000), stretch="lin")
+plot(g1966, col="palegreen2", border=NA, add=TRUE)
+plot(g1998, col="royalblue3", add=TRUE, border=NA)
+plot(g2005, col="darkgoldenrod4", add=TRUE, border=NA)
+plot(g2015, col="tomato3", add=TRUE, border=NA)
+
+```
+
+```{r, include = T}
+##### Working with Raster Data #####
+
+# read in each layer as a list
+#set up years to read in
+ndviYear <- seq(2003,2016)
+
+#read all files into a list
+NDVIraster <- list() 
+for(i in 1:length(ndviYear)){
+    NDVIraster[[i]] <- raster(paste0("NDVI_",ndviYear[i],".tif"))
+
+}
+# use str() to look at a single layer from the list
+#str(NDVIraster[[1]])
+# look at coordinate system
+NDVIraster[[1]]@crs
+
+```
+
+You want to work in an equal area projection with this glacier because you want to make conclusions about the change in area of the glacier and change in area of the vegetation. The UTM raster is slightly distorded in area, which would lead to inaccurate conclusions.
+
+# Question 3
+
+```{r, include = T}
+# plot the raster
+plot(NDVIraster[[1]])
+# plot the glacier data
+plotRGB(rgbL, ext=c(289995,310000,5371253,5400000), stretch="lin")
+plot(g1966, col="palegreen2", border=NA, add=TRUE)
+
+
+```
+
+You can't put the two sets of data on the same plot because they do not share a projection.
+
+# Question 4
+
+```{r, include = T}
+#reproject the glaciers
+#use the NDVI projection
+#spTransform(file to project, new coordinate system)
+g1966p <- spTransform(g1966,NDVIraster[[1]]@crs)
+g1998p <- spTransform(g1998,NDVIraster[[1]]@crs)
+g2005p <- spTransform(g2005,NDVIraster[[1]]@crs)
+g2015p <- spTransform(g2015,NDVIraster[[1]]@crs)
+
+### Make a map with both the types of data in one map.
+plot(NDVIraster[[13]], axes=FALSE, box=FALSE)
+plot(g2015p, col=NA, border="black", add=TRUE)
+```
+
+The NDVI seems to be much larger in valleys and lower at high elevations and extremely low at glaciers, because vascular plants can't grow in ice. And the higher elevations have short growing seasons and long, harsh winters, so only the most resilient plant species can grow up there. And they pay for their resilience with lower photosynthetic rates. 
+
+# Question 5
+
+```{r, include = T}
+#calculate area for all polygons
+#add directly into data table for each shapefile
+g1966p@data$a1966m.sq <- area(g1966p)
+g1998p@data$a1998m.sq <- area(g1998p)
+g2005p@data$a2005m.sq <- area(g2005p)
+g2015p@data$a2015m.sq <- area(g2015p)
+# join all this into a table separate from the shapefile
+gAllp1 <- join(g1966p@data,g1998p@data, by="GLACNAME", type="full")
+gAllp2 <- join(gAllp1,g2005p@data, by="GLACNAME", type="full")
+gAll <- join(gAllp2,g2015p@data, by="GLACNAME", type="full")
+
+diffPoly <- gDifference(g1966p, g2015p, checkValidity = 2L)
+
+# make a plot of the areas
+plot(c(1966,1998,2005,2015), 
+        c(gAll$a1966m.sq[1],gAll$a1998m.sq[1], gAll$a2005m.sq[1],gAll$a2015m.sq[1]),
+        type="b", 
+        pch=19, col=rgb(0.5,0.5,0.5,0.5), xlim= c(1965,2016),
+        ylim=c(0,2000000),
+        ylab="Area of glacier (meters squared)",
+        xlab="Year")
+        
+for(i in 2:39){
+points(c(1966,1998,2005,2015), 
+        c(gAll$a1966m.sq[i],gAll$a1998m.sq[i], gAll$a2005m.sq[i],gAll$a2015m.sq[i]),
+        type="b", 
+        pch=19, col=rgb(0.5,0.5,0.5,0.5))
+} 
+# calculate the percent change in area between 1966 and 2015
+# make an spplot of the glaciers showing different colors for percent change
+g2015p@data$perchange <- ((g2015p@data$a2015m.sq -
+                           g1966p@data$a1966m.sq)/g1966p@data$a1966m.sq)
+g2015p@data$perchange
+# plot
+spplot(g2015p, "perchange")
+```
+
+# Question 6
+
+```{r, include = T}
+min(g2015p@data$perchange)
+# glacier number 5
+g2015p@data$GLACNAME [5]
+# boulder glacier greatest loss
+# make a map
+# subset for only boulder glacier
+g2015boulder <- subset(g2015, GLACNAME == "Boulder Glacier")
+g2005boulder <- subset(g2005, GLACNAME == "Boulder Glacier")
+g1998boulder <- subset(g1998, GLACNAME == "Boulder Glacier")
+g1966boulder <- subset(g1966, GLACNAME == "Boulder Glacier")
+
+
+par(mai=c(1,1,1,1))
+par(xpd = T)
+plotRGB(rgbL, ext=c(273000, 274800, 5426500, 5428000), stretch="lin", axes = T, main = "Boulder Glacier; 85% Loss from 1966 to 2015")
+plot(g1966boulder, col="blue", border=NA, add = T)
+plot(g1998boulder, col="light blue", border=NA, add = T)
+plot(g2005boulder, col = "white", border = NA, add = T)
+plot(g2015boulder, col = "red", border = NA, add = T)
+legend("right",
+       legend = c("1966", "1998", "2005", "2015"),
+       fill = c("blue", "light blue", "white", "red"))
+
+```
+
+# Question 7
+
+```{r, include = T}
+#extract NDVI values
+NDVIdiff <- list()
+meanDiff <- numeric(0)
+#loop through all NDVI years
+for(i in 1:length(ndviYear)){
+  #get raster values in the difference polygon
+    NDVIdiff[[i]] <- extract(NDVIraster[[i]],diffPoly)[[1]]
+    #calculate the mean of the NDVI values
+    meanDiff[i] <- mean(NDVIdiff[[i]], na.rm=TRUE)
+}
+# plot the maxxNDVI over the years
+plot(ndviYear, meanDiff, type="b",
+    xlab= "Year",
+    ylab="Average NDVI (unitless)",
+    pch=19)
+
+#designate that NDVIraster list is a stack
+NDVIstack <- stack(NDVIraster)
+#set up lm function to apply to every cell
+#where x is the value of a cell
+#need to first skip NA values (like lakes)
+#if NA is missing in first raster, it is missing in all
+#so we can tell R to assign an NA rather than fitting the function
+timeT <- ndviYear
+fun <- function(x) {
+    if(is.na(x[1])){
+        NA}else{
+        #fit a regression and extract a slope
+            lm(x ~ timeT)$coefficients[2] }}
+#apply the slope function to the rasters
+NDVIfit <- calc(NDVIstack,fun)
+#plot the change in NDVI
+plot(NDVIfit, axes=FALSE)
+
+```
+
+Most of the cells in the raster have a slope slightly above zero, indicating little to no change in NDVI. There are some localized spots of increased and decreased NDVI, but most of the map shows the tiniest of upward slopes. To better calculate this, it would be helpful to know where the glaciers are to see if the NDVI is specifically increasing near the glaciers compared to the rest of the park.
+
+# Question 8
+
+
+```{r, include = T}
+#buffer glaciers
+
+glacier500m <- gBuffer(g1966p,#data to buffer
+                    byid=TRUE,#keeps original shape id 
+                    width=500)#width in coordinate system units
+# outputs of vector
+#convert to a raster
+buffRaster <- rasterize(glacier500m,#vector to convert to raster
+                    NDVIraster[[1]], #raster to match cells and extent
+                    field=glacier500m@data$GLACNAME, #field to convert to raster data
+                    background=0)#background value for missing data
+plot(buffRaster)
+#rasterize gralciers
+glacRaster <- rasterize(g1966p, NDVIraster[[1]], field=g1966p@data$GLACNAME, background=0)
+#subtract buffer from original glacier
+glacZones <- buffRaster - glacRaster
+plot(glacZones)
+
+```
+
+THe glaczones raster looks like a donut because it made the value NA anywhere the glaciers are to leave only the buffer around the glaciers but not the glaciers themselves. This is different from gdifference because it works with categorical (presence/absence) data rather than comparing numerical data.
+
+# Question 9
+
+
+```{r, include = T}
+meanChange <- zonal(NDVIfit, #NDVI function to summarize
+                glacZones,#raster with zones
+                "mean")#function to apply
+head(meanChange)
+# add into the 2015 glaciers raster
+meanChange = data.frame(meanChange)
+meanChange$zone = as.numeric(meanChange$zone)
+meanChange$OBJECTID = (meanChange$zone + 1)
+meanChange$OBJECTID = as.factor(meanChange$OBJECTID)
+
+
+
+oo <- sp::merge(g2015p,meanChange, by="OBJECTID")
+
+# plot mean change in NDVI
+spplot(oo, "mean", border = NA)
+
+```
+
+I cannot discern any patterns from this graph. The only pattern is that all the yearly cahnge values are really low compared to the absolute value of the NDVI.
+
+# Question 10
+
+I think that over the years, the yearly rate of change in the values of NDVI are substantial, because the absolute value of NDVI in the areas that the glacier receded range from .14 to .22 yearly. Though one year of change does 0.001 to 0.008 does not seem substantial, over ten years, this would add up to 0.01 ot 0.08 absolute value change. This could be the result of massive changes in plant composition and density, length of growing season, more area for plants to collinize etc.
+
+# Question 11
+
+
+```{r, include = T}
+# calculate average max NDVI across all years
+# create a single raster as a mean across all the years using calc function
+meanNDVI <- calc(NDVIstack, fun = mean)
+plot(meanNDVI)
+# use cellStats to calculate the mean of the means.
+cellStats(meanNDVI, stat='mean')
+# pattern between glacial size and NDVI within 500 meters
+NDVI500 <- zonal(meanNDVI, #NDVI function to summarize
+                glacZones,#raster with zones
+                "mean")#function to apply
+head(NDVI500)
+# add into the 2015 glaciers raster
+NDVI500 = data.frame(NDVI500)
+NDVI500$zone = as.numeric(NDVI500$zone)
+NDVI500$OBJECTID = (NDVI500$zone + 1)
+NDVI500$OBJECTID = as.factor(NDVI500$OBJECTID)
+
+
+
+oo1 <- sp::merge(g2015p,NDVI500, by="OBJECTID")
+
+# plot mean NDVI
+spplot(oo1, "mean", border = NA)
+plot(oo1@data$mean, oo1@data$a2015m.sq)
+glaclm = lm(oo1@data$mean ~ oo1@data$a2015m.sq)
+summary(glaclm)
+
+# make a map showing glaciers color coded by maximum NDVI range and mean NDVI raster.
+# standard deviation is an approximation of the range
+sdNDVI <- calc(NDVIstack, fun = sd)
+#plot
+plot(sdNDVI)
+sdNDVI500 <- zonal(sdNDVI, #NDVI function to summarize
+                glacZones,#raster with zones
+                "mean")#function to apply
+head(sdNDVI500)
+# add into the 2015 glaciers raster
+sdNDVI500 = data.frame(sdNDVI500)
+sdNDVI500$zone = as.numeric(sdNDVI500$zone)
+sdNDVI500$OBJECTID = (sdNDVI500$zone + 1)
+sdNDVI500$OBJECTID = as.factor(sdNDVI500$OBJECTID)
+
+
+# merge the standard deviation to the raster
+oosd <- sp::merge(g2015p, sdNDVI500, by="OBJECTID")
+
+# plot the mean NDVI and the colorcoded SD glaciers
+plot(meanNDVI, axes=FALSE, box=FALSE)
+plot(oosd, col = oosd@data$mean, border=NA, add=T)
+# glaciers all show up white because the Sd is small compared to the mean.
+
+
+
+```
+
+There is no significant relationship between glacier size and mean Max NDVI as shown by a linear model between the two variables(F-statistic: 2.718 on 1 and 37 DF,  p-value: 0.1077). The mean NDVI for the entire park over all the years is 0.74.
+
+# Question 12
+
+There are many types of data that could be used to support the claim that vegetation is increasing in areas where the glaciers are receding such as other forms of remote sensing data to help identify species. Another thing would be to add in climate data to control for longer, warmer summers which might be causing high levels of NDVI in the existing vegetation. Going forward with the study, it would be helpful to validate the study using on the ground measurements of productivity at certain distances from the glacier. Then using the remotely sensed data of where the glacier used to be, you could establish a proxy age of community at each distance, which could help determine how long it takes for plant communities to establish in a bare environment left behind by a glacier.
+
+# Question 13
+
+
