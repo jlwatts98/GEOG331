@@ -191,3 +191,7 @@ rf_errorM$overall
 # forest, agriculture, and wetlands, which are more spectrally similar, are a little more
 # error prone. However, there does not seem to be a systematic bias toward any one of the
 # landcover types. This is because we tuned the model well.
+
+##### GITHUB Link #####
+
+# https://github.com/jlwatts98/GEOG331/blob/master/activity_7.R
